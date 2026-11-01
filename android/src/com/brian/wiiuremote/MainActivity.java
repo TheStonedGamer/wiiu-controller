@@ -25,6 +25,9 @@ public final class MainActivity extends Activity {
   private boolean resumed, pro, classic, motionPlus;
   private int remoteOrientation;
   private final PhoneMotion motion = new PhoneMotion();
+  private final GyroPointer aim = new GyroPointer();
+  private boolean gyroAim;
+  private float aimSensitivity = 1, aimSmoothing = .06f;
   private int player = 3;
   private ConnectivityManager connectivity;
   private ConnectivityManager.NetworkCallback wifiChanges;
@@ -48,6 +51,9 @@ public final class MainActivity extends Activity {
                   showStats = false, snapGrid = true;
   private static final int EXPORT_LAYOUT = 71, IMPORT_LAYOUT = 72;
   private void readSettings() {
+    gyroAim = getPreferences(0).getBoolean("gyroAim", true) && (sensors == null || gyroscope != null);
+    aimSensitivity = Math.max(.25f, Math.min(3, getPreferences(0).getFloat("aimSensitivity", 1)));
+    aimSmoothing = Math.max(0, Math.min(.2f, getPreferences(0).getFloat("aimSmoothing", .06f)));
     sensitivity = getPreferences(0).getFloat("sensitivity", 1f);
     deadzone = getPreferences(0).getFloat("deadzone", .08f);
     opacity = getPreferences(0).getFloat("opacity", 1f);
@@ -91,6 +97,7 @@ public final class MainActivity extends Activity {
     sensors = (SensorManager)getSystemService(SENSOR_SERVICE);
     accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     gyroscope = sensors.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+    gyroAim &= gyroscope != null;
     motionPlus = getPreferences(0).getBoolean("motionPlus", false) && gyroscope != null;
     remoteOrientation = getPreferences(0).getInt("remoteOrientation", 0);
     applyOrientation();
@@ -137,14 +144,14 @@ public final class MainActivity extends Activity {
   @Override public void onConfigurationChanged(android.content.res.Configuration config) {
     super.onConfigurationChanged(config);
     if (pad != null) { pad.clear(); pad.builtW = -1; }
-    motion.reset();
+    resetMotion();
   }
   private void registerMotion() {
     sensors.unregisterListener(pad);
     if (!resumed || pro) return;
     if ((pad.tilt || motionPlus) && accelerometer != null)
       sensors.registerListener(pad, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-    if (motionPlus && gyroscope != null)
+    if ((motionPlus || gyroAim) && gyroscope != null)
       sensors.registerListener(pad, gyroscope, SensorManager.SENSOR_DELAY_GAME);
   }
   private void connectionSettings() {
@@ -237,7 +244,7 @@ public final class MainActivity extends Activity {
                  classic = mode.getSelectedItemPosition() == 2;
                  motionPlus = mode.getSelectedItemPosition() == 3;
                  pro = mode.getSelectedItemPosition() == 1 || classic;
-                 motion.reset(); applyOrientation(); registerMotion();
+                 resetMotion(); applyOrientation(); registerMotion();
                  player = playerPicker.getSelectedItemPosition() + 1;
                  getPreferences(0)
                      .edit()
@@ -430,18 +437,43 @@ public final class MainActivity extends Activity {
         .setNegativeButton("Cancel", null)
         .show();
   }
+  private void resetMotion() { motion.reset(); aim.reset(); }
+  private void recenterAim() {
+    aim.recenter(motion.quaternion);
+    if (pad != null) { pad.aimValid = false; pad.invalidate(); }
+  }
+  private void toggleAim() {
+    if (gyroscope == null) {
+      Toast.makeText(this, "Gyro aiming requires a hardware gyroscope", Toast.LENGTH_LONG).show(); return;
+    }
+    gyroAim = !gyroAim;
+    getPreferences(0).edit().putBoolean("gyroAim", gyroAim).apply();
+    recenterAim(); pad.clear(); pad.builtW = -1; registerMotion();
+  }
   private void motionSettings() {
     LinearLayout body = options();
     TextView info = new TextView(this);
-    info.setText(gyroscope == null ? "No hardware gyroscope: MotionPlus unavailable. Tilt still works." : "MotionPlus uses your gyroscope. Recenter while holding the phone still; game compatibility varies."); body.addView(info);
+    info.setText(gyroscope == null ? "No hardware gyroscope: gyro aiming and MotionPlus unavailable." : "Point the TOP EDGE of your phone at the TV center, then tap CENTER. Touching the pointer pad overrides gyro aim. Recenter if it drifts.");
+    body.addView(info);
+    CheckBox aiming = check(body, "Gyroscope pointer (Remote modes)", gyroAim);
+    aiming.setEnabled(gyroscope != null);
+    SeekBar gain = slider(body, "Aim sensitivity (%)", Math.round(aimSensitivity * 100), 300);
+    SeekBar smooth = slider(body, "Aim smoothing (ms)", Math.round(aimSmoothing * 1000), 200);
     Spinner orientation = new Spinner(this);
     orientation.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, new String[] {"Automatic rotation", "Vertical Wii Remote", "Horizontal Wii Remote"}));
     orientation.setSelection(remoteOrientation); body.addView(orientation);
-    Button center = new Button(this); center.setText("Recenter motion"); body.addView(center);
-    center.setOnClickListener(v -> { motion.reset(); pad.clear(); Toast.makeText(this, "Motion recentered", Toast.LENGTH_SHORT).show(); });
-    new AlertDialog.Builder(this).setTitle("Motion & orientation").setView(body).setPositiveButton("Save", (d,w) -> {
-      remoteOrientation = orientation.getSelectedItemPosition(); getPreferences(0).edit().putInt("remoteOrientation", remoteOrientation).apply();
-      pad.clear(); motion.reset(); applyOrientation();
+    Button center = new Button(this); center.setText("Recenter pointer"); body.addView(center);
+    center.setOnClickListener(v -> { recenterAim(); Toast.makeText(this, "Pointer recentered", Toast.LENGTH_SHORT).show(); });
+    Button motionCenter = new Button(this); motionCenter.setText("Reset MotionPlus orientation"); body.addView(motionCenter);
+    motionCenter.setOnClickListener(v -> { resetMotion(); pad.clear(); });
+    ScrollView scroll = new ScrollView(this); scroll.addView(body);
+    new AlertDialog.Builder(this).setTitle("Motion & pointing").setView(scroll).setPositiveButton("Save", (d,w) -> {
+      remoteOrientation = orientation.getSelectedItemPosition();
+      gyroAim = aiming.isChecked() && gyroscope != null;
+      aimSensitivity = Math.max(.25f, gain.getProgress() / 100f);
+      aimSmoothing = smooth.getProgress() / 1000f;
+      getPreferences(0).edit().putInt("remoteOrientation", remoteOrientation).putBoolean("gyroAim", gyroAim).putFloat("aimSensitivity", aimSensitivity).putFloat("aimSmoothing", aimSmoothing).apply();
+      pad.clear(); resetMotion(); applyOrientation(); registerMotion();
     }).setNegativeButton("Cancel", null).show();
   }
   private void appearanceSettings() {
@@ -586,7 +618,7 @@ public final class MainActivity extends Activity {
     classic = next == 2;
     pro = next == 1 || next == 2;
     motionPlus = next == 3;
-    motion.reset(); applyOrientation(); registerMotion();
+    resetMotion(); applyOrientation(); registerMotion();
     pad.clear();
     getPreferences(0).edit().putBoolean("pro", pro)
                      .putBoolean("classic", classic)
@@ -610,6 +642,8 @@ public final class MainActivity extends Activity {
     boolean tilt = false;
     float ax, ay, az = 1000;
     long lastAcceleration;
+    boolean aimValid;
+    int aimX, aimY;
     int lastRotation = -1;
     float scale = 1, offsetX, offsetY;
     int builtW = -1;
@@ -695,13 +729,17 @@ public final class MainActivity extends Activity {
       } else if (portrait()) {
         int[] d = remoteDpad(); dpad(142, 140, d[0], d[1], d[2], d[3]);
         round("A", 65, 340, 140, 0x800); round("B", 255, 340, 140, 0x400);
-        add("POINTER", 40, 510, 380, 220, 0, 3);
+        add("POINTER", 40, 540, 380, 190, 0, 3);
+        add(gyroAim ? "AIM ON" : "AIM OFF", 40, 490, 180, 40, 0, 13);
+        add("CENTER", 240, 490, 180, 40, 0, 14);
         add("-", 70, 750, 80, 50, 0x1000, 0); add("HOME", 170, 750, 120, 50, 0x8000, 0); add("+", 310, 750, 80, 50, 0x10, 0);
         round("1", 85, 825, 80, 0x200); round("2", 285, 825, 80, 0x100);
         add("SHAKE", 12, 125, 110, 50, 0, 4); add(tilt ? "TILT ON" : "TILT OFF", 338, 125, 110, 50, 0, 12);
       } else {
         int[] d = remoteDpad(); dpad(40, 204, d[0], d[1], d[2], d[3]);
-        add("POINTER", 286, 180, 346, 224, 0, 3);
+        add("POINTER", 286, 188, 346, 216, 0, 3);
+        add(gyroAim ? "AIM ON" : "AIM OFF", 286, 142, 160, 40, 0, 13);
+        add("CENTER", 458, 142, 174, 40, 0, 14);
         round("A", 722, 178, 86, 0x800);
         round("B", 822, 244, 76, 0x400);
         round("1", 690, 322, 66, 0x200);
@@ -742,6 +780,7 @@ public final class MainActivity extends Activity {
     }
     void clear() {
       fingers.clear();
+      aimValid = false;
       client.publish(state());
       invalidate();
     }
@@ -764,7 +803,7 @@ public final class MainActivity extends Activity {
       scale = Math.min(getWidth() / canvasW(), getHeight() / canvasH());
       offsetX = (getWidth() - canvasW() * scale) / 2;
       offsetY = (getHeight() - canvasH() * scale) / 2;
-      if (lastRotation != rotation()) { lastRotation = rotation(); clear(); motion.reset(); builtW = -1; }
+      if (lastRotation != rotation()) { lastRotation = rotation(); clear(); resetMotion(); builtW = -1; }
       if (builtW != getWidth() || builtPro != pro || builtClassic != classic)
         layoutControls();
       publish();
@@ -817,8 +856,16 @@ public final class MainActivity extends Activity {
                   b.rect.bottom - 14, muted, 14);
         } else if (b.action == 3) {
           label(canvas, "POINTER", b.rect.left + 18, b.rect.top + 30, ink, 18);
-          label(canvas, "Touch to aim", b.rect.left + 18, b.rect.bottom - 18,
+          label(canvas, gyroAim ? "Gyro aim / touch override" : "Touch to aim", b.rect.left + 18, b.rect.bottom - 18,
                 muted, 15);
+          if (aimValid && !held(b)) {
+            float px = b.rect.left + (aimX / 156f + 1) * .5f * b.rect.width();
+            float py = b.rect.top + (aimY / 156f + 1) * .5f * b.rect.height();
+            paint.setColor(accent);
+            canvas.drawCircle(px, py, 8, paint);
+            canvas.drawLine(px - 18, py, px + 18, py, paint);
+            canvas.drawLine(px, py - 18, px, py + 18, paint);
+          }
           for (int i = 0; i < fingers.size(); i++) {
             Finger f = fingers.valueAt(i);
             if (f.c == b) {
@@ -893,6 +940,11 @@ public final class MainActivity extends Activity {
             }
             if (b.action == 11) {
               settings();
+              return true;
+            }
+            if (b.action == 13) { toggleAim(); return true; }
+            if (b.action == 14) {
+              recenterAim(); Toast.makeText(MainActivity.this, "Pointer centered — aim the phone's top edge", Toast.LENGTH_SHORT).show();
               return true;
             }
             if (b.action == 12) {
@@ -1015,6 +1067,12 @@ public final class MainActivity extends Activity {
         state.motionValid = motion.fresh(SystemClock.elapsedRealtime() / 1000.0);
         state.gyro = motion.rate.clone(); state.quaternion = motion.quaternion.clone();
       }
+      aimValid = false;
+      double now = SystemClock.elapsedRealtime() / 1000.0;
+      if (!pro && gyroAim && motion.fresh(now) && aim.update(motion.quaternion, now, aimSensitivity, aimSmoothing)) {
+        aimValid = true; aimX = Math.round(aim.x()*156); aimY = Math.round(aim.y()*156);
+        state.pointer = true; state.px = aimX; state.py = aimY;
+      } else aim.invalidate();
       for (int i = 0; i < fingers.size(); i++) {
         Finger f = fingers.valueAt(i);
         Control b = f.c;
@@ -1054,7 +1112,7 @@ public final class MainActivity extends Activity {
         ay = a[1] / SensorManager.GRAVITY_EARTH * 1000;
         az = a[2] / SensorManager.GRAVITY_EARTH * 1000;
       }
-      if ((tilt || motionPlus) && !pro) publish();
+      if ((tilt || motionPlus || gyroAim) && !pro) publish();
     }
     @Override
     public void onAccuracyChanged(Sensor s, int accuracy) {}

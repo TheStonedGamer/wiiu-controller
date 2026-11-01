@@ -71,6 +71,20 @@ to the ordinary KPAD reads/probe. Callbacks run outside the receiver mutex.
 These hooks cover a subset of the hardware API; raw reads and all accessory
 calibration/extension behavior are not implemented.
 
+## Client gyro pointing
+
+Version 0.5.1 clients can populate the ordinary pointer fields (12, 14, 22)
+from relative gyro orientation in either Remote mode. This needs no additional
+packet format or receiver hook. Touch input overrides the gyro coordinates.
+
+A separate calibration quaternion is stored when CENTER is tapped. The client
+rotates the top-edge ray (0,1,0) by the relative quaternion, projects its yaw and
+pitch into ±35°/±25° full-scale ranges, applies user sensitivity, clamps to ±1,
+and optionally filters with an exponential time constant. Quaternion rotations
+about the pointing ray do not move the pointer. A ray pointing behind the
+calibrated forward hemisphere, or an old sensor sample, clears pointer validity.
+The calibration quaternion does not alter MotionPlus orientation.
+
 ## Ownership, acknowledgements and release
 
 Accepted phone packets receive `ANWA`; an occupied slot receives `ANWB`.

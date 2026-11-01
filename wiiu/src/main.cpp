@@ -12,7 +12,7 @@
 #include <wups.h>
 WUPS_PLUGIN_NAME("Wii U Controller");
 WUPS_PLUGIN_DESCRIPTION("3DS, Android, iOS: Remote, Pro and Classic");
-WUPS_PLUGIN_VERSION("0.5.0");
+WUPS_PLUGIN_VERSION("0.5.1");
 WUPS_PLUGIN_AUTHOR("Brian");
 WUPS_PLUGIN_LICENSE("MIT");
 static OSMutex mutex;

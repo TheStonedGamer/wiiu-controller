@@ -23,3 +23,11 @@ the phone sensor. Wii U game compatibility still needs live console checks. Neit
 
 See [building](../docs/BUILDING.md), [protocol](../docs/PROTOCOL.md) and the root
 [README](../README.md) for the feature list and compatibility limits.
+
+## Gyro pointing (0.5.1)
+
+Remote modes use the gyroscope to aim the ordinary Wii pointer. Point your
+phone's top edge toward the TV center and tap CENTER. AIM ON/OFF toggles it;
+touching the pointer pad overrides it. Sensitivity and smoothing are under
+Motion & orientation. Pointer centering leaves MotionPlus orientation intact.
+Gyro samples expire after 200 ms and orientation changes reset calibration.

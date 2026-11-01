@@ -11,7 +11,7 @@ public class ControllerInstrumentation extends Instrumentation {
   java.util.Map<String,Object> original=new java.util.HashMap<>(settings.getAll());
   if(options!=null && options.getString("restoreHost")!=null && !options.getString("restoreHost").isEmpty())original.put("host",options.getString("restoreHost"));
   try{
-   getTargetContext().getSharedPreferences("MainActivity",0).edit().putString("host","127.0.0.1").putBoolean("pro",true).putBoolean("classic",false).putBoolean("motionPlus",false).remove("layout.pro").remove("layout.classic").putInt("player",3).commit();
+   getTargetContext().getSharedPreferences("MainActivity",0).edit().putString("host","127.0.0.1").putBoolean("pro",true).putBoolean("classic",false).putBoolean("motionPlus",false).putBoolean("gyroAim",true).putFloat("aimSensitivity",1).putFloat("aimSmoothing",0).remove("layout.pro").remove("layout.classic").putInt("player",3).commit();
    PhoneInputProbe.automation=getUiAutomation();PhoneInputProbe.automation.setRotation(UiAutomation.ROTATION_FREEZE_90);
    Activity activity=startActivitySync(new Intent().setClassName("com.brian.wiiuremote","com.brian.wiiuremote.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
    Thread.sleep(1000);
@@ -28,13 +28,14 @@ public class ControllerInstrumentation extends Instrumentation {
    PhoneInputProbe.expectedMode=2;PhoneInputProbe.main(new String[0]);
    invoke(activity,"toggleMode",null);Thread.sleep(500);
    motionAndPortraitCheck(activity);
-   invoke(activity,"toggleMode",null);invoke(activity,"toggleMode",null);Thread.sleep(500);
+   gyroPointerCheck(activity);
+   invoke(activity,"toggleMode",null);Thread.sleep(500);
    PhoneInputProbe.automation.setRotation(UiAutomation.ROTATION_FREEZE_90);Thread.sleep(500);
    dimensions(activity);
    String oldLayout=getTargetContext().getSharedPreferences("MainActivity",0).getString("layout.pro",null);
    try{editorCheck(activity);}
    finally{android.content.SharedPreferences.Editor prefs=getTargetContext().getSharedPreferences("MainActivity",0).edit();if(oldLayout==null)prefs.remove("layout.pro");else prefs.putString("layout.pro",oldLayout);prefs.commit();}
-   result.putString("result","PASS: Pro and Classic five-contact input, releases, portrait Remote layout, live gyro MotionPlus packets, and layout editor persistence");resultCode=Activity.RESULT_OK;
+   result.putString("result","PASS: Pro and Classic five-contact input, releases, portrait Remote layout, live gyro packets, gyro aim/recenter/touch override/stale release in Remote and MotionPlus, and editor persistence");resultCode=Activity.RESULT_OK;
   }catch(Throwable e){result.putString("error",android.util.Log.getStackTraceString(e));resultCode=Activity.RESULT_CANCELED;}
   finally {
    android.content.SharedPreferences.Editor restore=settings.edit().clear();
@@ -75,6 +76,55 @@ public class ControllerInstrumentation extends Instrumentation {
    }catch(java.net.SocketTimeoutException expected){}
    PhoneInputProbe.send(android.view.MotionEvent.ACTION_UP,point(a.centerX(),a.centerY()));
    if(!valid || !held)throw new AssertionError("Portrait MotionPlus missing real gyro or A input: gyro="+valid+" button="+held);
+  }
+ }
+ private void pose(Activity activity,float[] q)throws Exception {
+  if(q==null)return;
+  runOnMainSync(()->{try {
+   Object motion=field(activity,"motion");
+   motion.getClass().getMethod("update",double.class,float.class,float.class,float.class,int.class).invoke(motion,SystemClock.elapsedRealtime()/1000.0,0f,0f,0f,0);
+   System.arraycopy(q,0,(float[])motion.getClass().getField("quaternion").get(motion),0,4);
+   Object pad=field(activity,"pad");java.lang.reflect.Method publish=pad.getClass().getDeclaredMethod("publish");publish.setAccessible(true);publish.invoke(pad);
+  }catch(Exception e){throw new RuntimeException(e);}});
+ }
+ private void expectAim(java.net.DatagramSocket server,Activity activity,float[] q,int mode,boolean valid,int x,int y)throws Exception {
+  int matched=0;long deadline=SystemClock.uptimeMillis()+1800;
+  while(SystemClock.uptimeMillis()<deadline) {
+   pose(activity,q);
+   try {
+    byte[] b=new byte[128];java.net.DatagramPacket packet=new java.net.DatagramPacket(b,b.length);server.receive(packet);
+    server.send(new java.net.DatagramPacket(new byte[]{'A','N','W','A'},4,packet.getAddress(),packet.getPort()));
+    java.nio.ByteBuffer data=java.nio.ByteBuffer.wrap(b);
+    if(b[23]==mode && (b[22]==1)==valid && (!valid || Math.abs(data.getShort(12)-x)<=2 && Math.abs(data.getShort(14)-y)<=2)) {
+      if(++matched>=5)return;
+    } else matched=0;
+   }catch(java.net.SocketTimeoutException expected){}
+  }
+  throw new AssertionError("Gyro pointer packet mismatch: mode="+mode+" valid="+valid+" expected="+x+","+y);
+ }
+ private void gyroPointerCheck(Activity activity)throws Exception {
+  float[] identity={1,0,0,0};
+  double z=Math.toRadians(-17.5)/2,x=Math.toRadians(12.5)/2;
+  float[] turned={(float)(Math.cos(z)*Math.cos(x)),(float)(Math.cos(z)*Math.sin(x)),(float)(Math.sin(z)*Math.sin(x)),(float)(Math.sin(z)*Math.cos(x))};
+  for(int mode:new int[]{3,0}) {
+   if(mode==0){invoke(activity,"toggleMode",null);Thread.sleep(500);}
+   runOnMainSync(()->{try {((android.hardware.SensorManager)field(activity,"sensors")).unregisterListener((android.hardware.SensorEventListener)field(activity,"pad"));}catch(Exception e){throw new RuntimeException(e);}});
+   Thread.sleep(100);
+   try(java.net.DatagramSocket server=new java.net.DatagramSocket(26760,java.net.InetAddress.getByName("127.0.0.1"))) {
+    server.setSoTimeout(30);
+    pose(activity,identity);invoke(activity,"recenterAim",null);
+    expectAim(server,activity,identity,mode,true,0,0);
+    expectAim(server,activity,turned,mode,true,78,-78);
+    invoke(activity,"recenterAim",null);
+    expectAim(server,activity,turned,mode,true,0,0);
+    android.graphics.RectF pointer=button(field(activity,"pad"),"POINTER");
+    float px=pointer.left+pointer.width()*.75f,py=pointer.top+pointer.height()*.75f;
+    PhoneInputProbe.down=SystemClock.uptimeMillis();PhoneInputProbe.send(android.view.MotionEvent.ACTION_DOWN,point(px,py));
+    expectAim(server,activity,turned,mode,true,78,78);
+    PhoneInputProbe.send(android.view.MotionEvent.ACTION_UP,point(px,py));
+    expectAim(server,activity,turned,mode,true,0,0);
+    Thread.sleep(250);expectAim(server,activity,null,mode,false,0,0);
+   }
   }
  }
  private Object field(Object object,String name)throws Exception{java.lang.reflect.Field f=object.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(object);}

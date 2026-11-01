@@ -27,3 +27,11 @@ The layout export sheet can save/share a JSON file; import uses the iOS
 document picker. Files use the same schema as the Android client.
 
 See [building/signing](../docs/BUILDING.md) and [protocol](../docs/PROTOCOL.md).
+
+## Gyro pointing (0.5.1)
+
+In either Remote mode, point the phone's top edge at the TV center and tap
+CENTER. AIM ON/OFF toggles gyro pointing, and the pointer pad provides a touch
+override and aim preview. Motion & orientation adjusts aim sensitivity and
+smoothing. CENTER preserves MotionPlus's independent orientation. Rotating the
+screen resets calibration; stale gyro samples invalidate the pointer.

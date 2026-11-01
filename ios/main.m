@@ -3,6 +3,7 @@
 #import <CoreMotion/CoreMotion.h>
 #include "input_buffer.h"
 #include "motion_state.h"
+#include "gyro_pointer.h"
 #import <arpa/inet.h>
 #import <fcntl.h>
 #import <math.h>
@@ -25,10 +26,13 @@ static UIColor *rgb(unsigned value) {
 @interface RemoteView : UIView <UIDocumentPickerDelegate> {
   IOSInputBuffer edges;
   PhoneMotion motionState;
+  GyroPointer aimState;
 }
 @property(nonatomic, strong) NSMutableArray *controls;
 @property(nonatomic, strong) NSMutableDictionary *fingers;
-@property(nonatomic) BOOL pro, classic, motionPlus, editing, enabled;
+@property(nonatomic) BOOL pro, classic, motionPlus, editing, enabled, gyroAim, aimValid;
+@property(nonatomic) float aimSensitivity, aimSmoothing;
+@property(nonatomic) int aimX, aimY;
 @property(nonatomic) NSInteger player;
 @property(nonatomic, strong) NSString *host, *status;
 @property(nonatomic) int fd;
@@ -87,7 +91,7 @@ static UIColor *rgb(unsigned value) {
       @"pro" : @YES,
       @"host" : @"192.168.1.100",
       @"sensitivity" : @1,
-      @"deadzone" : @0.08, @"haptics": @YES, @"snapGrid": @YES, @"showLabels": @YES, @"opacity": @1
+      @"gyroAim": @YES, @"aimSensitivity": @1, @"aimSmoothing": @0.06, @"deadzone" : @0.08, @"haptics": @YES, @"snapGrid": @YES, @"showLabels": @YES, @"opacity": @1
     }];
     self.player = MAX(1, MIN(4, [prefs integerForKey:@"player"]));
     self.pro = [prefs boolForKey:@"pro"];
@@ -105,8 +109,11 @@ static UIColor *rgb(unsigned value) {
     self.accent = [prefs integerForKey:@"accent"];
     self.motion = [CMMotionManager new];
     self.motionPlus = [prefs boolForKey:@"motionPlus"] && self.motion.gyroAvailable;
+    self.gyroAim = [prefs boolForKey:@"gyroAim"] && self.motion.gyroAvailable;
+    self.aimSensitivity = MAX(.25, MIN(3, [prefs floatForKey:@"aimSensitivity"]));
+    self.aimSmoothing = MAX(0, MIN(.2, [prefs floatForKey:@"aimSmoothing"]));
     self.remoteOrientation = [prefs integerForKey:@"remoteOrientation"];
-    phone_motion_reset(&motionState);
+    [self resetMotion];
     self.controls = [NSMutableArray array];
     self.fingers = [NSMutableDictionary dictionary];
     [self layoutControls];
@@ -169,7 +176,7 @@ static UIColor *rgb(unsigned value) {
   [super layoutSubviews];
   static CGSize previous = {0, 0};
   if (!CGSizeEqualToSize(previous, self.bounds.size)) {
-    previous = self.bounds.size; [self clear]; phone_motion_reset(&motionState); [self layoutControls];
+    previous = self.bounds.size; [self clear]; [self resetMotion]; [self layoutControls];
   }
 }
 - (void)remoteDpadX:(float)x y:(float)y {
@@ -182,7 +189,7 @@ static UIColor *rgb(unsigned value) {
   [self.motion stopGyroUpdates]; [self.motion stopAccelerometerUpdates];
   if (self.pro || !self.enabled) return;
   if (self.tilt || self.motionPlus) { self.motion.accelerometerUpdateInterval = 1.0/60; [self.motion startAccelerometerUpdates]; }
-  if (self.motionPlus) { self.motion.gyroUpdateInterval = 1.0/100; [self.motion startGyroUpdates]; }
+  if (self.motionPlus || self.gyroAim) { self.motion.gyroUpdateInterval = 1.0/100; [self.motion startGyroUpdates]; }
 }
 - (void)layoutControls {
   [self.controls removeAllObjects];
@@ -217,13 +224,17 @@ static UIColor *rgb(unsigned value) {
   } else if ([self portrait]) {
     [self remoteDpadX:142 y:140];
     [self add:@"A" x:65 y:340 w:140 h:140 bit:2048 action:0]; [self add:@"B" x:255 y:340 w:140 h:140 bit:1024 action:0];
-    [self add:@"POINTER" x:40 y:510 w:380 h:220 bit:0 action:3];
+    [self add:@"POINTER" x:40 y:540 w:380 h:190 bit:0 action:3];
+    [self add:self.gyroAim ? @"AIM ON" : @"AIM OFF" x:40 y:490 w:180 h:40 bit:0 action:13];
+    [self add:@"CENTER" x:240 y:490 w:180 h:40 bit:0 action:14];
     [self add:@"-" x:70 y:750 w:80 h:50 bit:4096 action:0]; [self add:@"HOME" x:170 y:750 w:120 h:50 bit:32768 action:0]; [self add:@"+" x:310 y:750 w:80 h:50 bit:16 action:0];
     [self add:@"1" x:85 y:825 w:80 h:80 bit:512 action:0]; [self add:@"2" x:285 y:825 w:80 h:80 bit:256 action:0];
     [self add:@"SHAKE" x:12 y:125 w:110 h:50 bit:0 action:4]; [self add:self.tilt ? @"TILT ON" : @"TILT OFF" x:338 y:125 w:110 h:50 bit:0 action:12];
   } else {
     [self remoteDpadX:40 y:204];
-    [self add:@"POINTER" x:286 y:180 w:346 h:224 bit:0 action:3];
+    [self add:@"POINTER" x:286 y:188 w:346 h:216 bit:0 action:3];
+    [self add:self.gyroAim ? @"AIM ON" : @"AIM OFF" x:286 y:142 w:160 h:40 bit:0 action:13];
+    [self add:@"CENTER" x:458 y:142 w:174 h:40 bit:0 action:14];
     [self add:@"A" x:722 y:178 w:86 h:86 bit:2048 action:0];
     [self add:@"B" x:822 y:244 w:76 h:76 bit:1024 action:0];
     [self add:@"1" x:690 y:322 w:66 h:66 bit:512 action:0];
@@ -310,7 +321,20 @@ static UIColor *rgb(unsigned value) {
     [(held ? rgb(0x265E60) : rgb(0x1D2B3F)) setFill];
     [[UIBezierPath bezierPathWithRoundedRect:r cornerRadius:14] fill];
     int action = [control[@"action"] intValue];
-    if (action == 1 || action == 2) {
+    if (action == 3) {
+      [self text:self.gyroAim ? @"GYRO AIM / TOUCH OVERRIDE" : @"TOUCH TO AIM" x:r.origin.x+14 y:r.origin.y+12 size:14 color:muted];
+      BOOL valid = self.aimValid; float px = self.aimX / 156.0f, py = self.aimY / 156.0f;
+      for (NSDictionary *finger in self.fingers.allValues) if (finger[@"control"] == control) {
+        CGPoint point = [finger[@"point"] CGPointValue]; valid = YES;
+        px = (point.x-r.origin.x)/r.size.width*2-1; py = (point.y-r.origin.y)/r.size.height*2-1;
+      }
+      if (valid) {
+        float x = r.origin.x+(MAX(-1,MIN(1,px))+1)*.5*r.size.width;
+        float y = r.origin.y+(MAX(-1,MIN(1,py))+1)*.5*r.size.height;
+        [accent setFill]; UIRectFill(CGRectMake(x-18,y-1,36,2)); UIRectFill(CGRectMake(x-1,y-18,2,36));
+        [[UIBezierPath bezierPathWithOvalInRect:CGRectMake(x-6,y-6,12,12)] fill];
+      }
+    } else if (action == 1 || action == 2) {
       float radius = MIN(r.size.width, r.size.height) * .34;
       CGPoint center = CGPointMake(CGRectGetMidX(r), CGRectGetMidY(r));
       [rgb(0x2C415A) setFill];
@@ -372,6 +396,7 @@ static UIColor *rgb(unsigned value) {
 }
 - (void)clear {
   [self.fingers removeAllObjects];
+  self.aimValid = NO;
   memset(&edges, 0, sizeof(edges));
   [self setNeedsDisplay];
 }
@@ -381,6 +406,9 @@ static UIColor *rgb(unsigned value) {
   [p setBool:self.pro forKey:@"pro"];
   [p setBool:self.classic forKey:@"classic"];
   [p setBool:self.motionPlus forKey:@"motionPlus"];
+  [p setBool:self.gyroAim forKey:@"gyroAim"];
+  [p setFloat:self.aimSensitivity forKey:@"aimSensitivity"];
+  [p setFloat:self.aimSmoothing forKey:@"aimSmoothing"];
   [p setInteger:self.remoteOrientation forKey:@"remoteOrientation"];
   [p setBool:self.haptics forKey:@"haptics"];
   [p setBool:self.snapGrid forKey:@"snapGrid"];
@@ -468,7 +496,7 @@ static UIColor *rgb(unsigned value) {
       [self releaseAndClose];
       if (mode == 3 && !self.motion.gyroAvailable) { [self alert:@"MotionPlus requires a hardware gyroscope"]; return; }
       self.pro = mode == 1 || mode == 2; self.classic = mode == 2; self.motionPlus = mode == 3;
-      phone_motion_reset(&motionState); [self startMotion]; [UIViewController attemptRotationToDeviceOrientation];
+      [self resetMotion]; [self startMotion]; [UIViewController attemptRotationToDeviceOrientation];
       [self savePrefs]; [self layoutControls]; self.pauseUntil = clockNow() + .35;
     }]];
   }
@@ -484,14 +512,28 @@ static UIColor *rgb(unsigned value) {
   }
   ios_input_publish(&edges, clockNow(), buttons);
 }
+- (void)resetMotion { phone_motion_reset(&motionState); gyro_pointer_reset(&aimState); self.aimValid = NO; }
+- (void)recenterAim { gyro_pointer_center(&aimState, motionState.q); self.aimValid = NO; }
+- (void)toggleAim {
+  if (!self.motion.gyroAvailable) { [self alert:@"Gyro aiming requires a hardware gyroscope"]; return; }
+  self.gyroAim = !self.gyroAim; [self recenterAim]; [self clear]; [self savePrefs]; [self startMotion]; [self layoutControls];
+}
 - (void)motionSettings {
-  UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Motion & orientation" message:self.motion.gyroAvailable ? @"Choose MotionPlus in Controller type. Recenter while holding still; gyro orientation can drift over time." : @"No hardware gyroscope: MotionPlus unavailable." preferredStyle:1];
-  [a addAction:[UIAlertAction actionWithTitle:@"Recenter motion" style:0 handler:^(UIAlertAction *x) { phone_motion_reset(&motionState); [self clear]; }]];
+  UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Motion & pointing" message:self.motion.gyroAvailable ? @"Point the phone's TOP EDGE at the TV center, then tap CENTER. Touch overrides gyro aiming. Sensitivity 25–300%; smoothing 0–200 ms." : @"No gyroscope: gyro aiming and MotionPlus unavailable." preferredStyle:1];
+  [a addTextFieldWithConfigurationHandler:^(UITextField *f) { f.placeholder = @"Aim sensitivity (%)"; f.keyboardType = UIKeyboardTypeNumberPad; f.text = [NSString stringWithFormat:@"%.0f",self.aimSensitivity*100]; }];
+  [a addTextFieldWithConfigurationHandler:^(UITextField *f) { f.placeholder = @"Aim smoothing (ms)"; f.keyboardType = UIKeyboardTypeNumberPad; f.text = [NSString stringWithFormat:@"%.0f",self.aimSmoothing*1000]; }];
+  [a addAction:[UIAlertAction actionWithTitle:@"Save aim settings" style:0 handler:^(UIAlertAction *x) {
+    self.aimSensitivity = MAX(.25,MIN(3,[a.textFields[0].text floatValue]/100));
+    self.aimSmoothing = MAX(0,MIN(.2,[a.textFields[1].text floatValue]/1000)); [self savePrefs];
+  }]];
+  [a addAction:[UIAlertAction actionWithTitle:self.gyroAim ? @"Disable gyro aiming" : @"Enable gyro aiming" style:0 handler:^(UIAlertAction *x) { [self toggleAim]; }]];
+  [a addAction:[UIAlertAction actionWithTitle:@"Recenter pointer" style:0 handler:^(UIAlertAction *x) { [self recenterAim]; }]];
+  [a addAction:[UIAlertAction actionWithTitle:@"Reset MotionPlus orientation" style:0 handler:^(UIAlertAction *x) { [self resetMotion]; [self clear]; }]];
   NSArray *names = @[@"Automatic rotation", @"Vertical Wii Remote", @"Horizontal Wii Remote"];
   for (NSUInteger i = 0; i < names.count; i++) {
     NSInteger orientation = i;
     [a addAction:[UIAlertAction actionWithTitle:names[i] style:0 handler:^(UIAlertAction *x) {
-      self.remoteOrientation = orientation; [self clear]; phone_motion_reset(&motionState); [self savePrefs]; [UIViewController attemptRotationToDeviceOrientation]; [self layoutControls];
+      self.remoteOrientation = orientation; [self clear]; [self resetMotion]; [self savePrefs]; [UIViewController attemptRotationToDeviceOrientation]; [self layoutControls];
     }]];
   }
   [a addAction:[UIAlertAction actionWithTitle:@"Close" style:1 handler:nil]];
@@ -776,6 +818,8 @@ static UIColor *rgb(unsigned value) {
           [self settings];
           return;
         }
+        if (action == 13) { [self toggleAim]; return; }
+        if (action == 14) { [self recenterAim]; return; }
         if (action == 12) {
           if (!self.motion.accelerometerAvailable) { [self alert:@"No accelerometer available"]; return; }
           self.tilt = !self.tilt;
@@ -858,6 +902,11 @@ static UIColor *rgb(unsigned value) {
   unsigned buttons = 0;
   int lx = 0, ly = 0, rx = 0, ry = 0, px = 0, py = 0, ax = 0, az = 1000;
   BOOL pointer = NO;
+  self.aimValid = NO;
+  if (!neutral && !self.pro && self.gyroAim && motionState.last > 0 && clockNow()-motionState.last < .2 && gyro_pointer_update(&aimState, motionState.q, clockNow(), self.aimSensitivity, self.aimSmoothing)) {
+    pointer = YES; self.aimValid = YES;
+    px = self.aimX = stick(aimState.x*156); py = self.aimY = stick(aimState.y*156);
+  } else gyro_pointer_invalidate(&aimState);
   if (!neutral)
     for (NSDictionary *f in self.fingers.allValues) {
       NSDictionary *c = f[@"control"];
@@ -930,8 +979,8 @@ static UIColor *rgb(unsigned value) {
 }
 - (NSUInteger)packetSize { return !self.pro && self.motionPlus ? 64 : 32; }
 - (void)tick {
-  if (self.lastRotation != [self rotation]) { self.lastRotation = [self rotation]; [self clear]; phone_motion_reset(&motionState); [self layoutControls]; }
-  if (self.enabled && !self.pro && self.motionPlus && self.motion.gyroData && self.motion.gyroData.timestamp != motionState.last) {
+  if (self.lastRotation != [self rotation]) { self.lastRotation = [self rotation]; [self clear]; [self resetMotion]; [self layoutControls]; }
+  if (self.enabled && !self.pro && (self.motionPlus || self.gyroAim) && self.motion.gyroData && self.motion.gyroData.timestamp != motionState.last) {
     CMGyroData *data = self.motion.gyroData;
     phone_motion_update(&motionState, data.timestamp, data.rotationRate.x, data.rotationRate.y, data.rotationRate.z, [self rotation]);
   }

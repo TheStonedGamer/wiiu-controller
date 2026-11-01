@@ -10,8 +10,8 @@ One Aroma plugin receives input for up to four controller slots.
 | Nintendo 3DS / 2DS homebrew | Pro, Classic | 2 | CIA / 3DSX |
 | Wii U with Aroma | Receiver for all clients | Four independent slots | WPS |
 
-Version 0.5.0 adds Classic Controller support, phone rotation, and experimental
-MotionPlus input. Physical controllers take priority over virtual input on the
+Version 0.5.1 adds gyro pointing with calibration, smoothing and touch override,
+building on Classic Controller, phone rotation and experimental MotionPlus support. Physical controllers take priority over virtual input on the
 same slot. Two devices cannot own the same slot simultaneously.
 
 ## Install
@@ -52,6 +52,28 @@ also use the C-stick and physical ZL/ZR.
 Motion axes and the Remote D-pad follow display rotation, including reverse
 landscape. Layout editing locks the current orientation. Rotate the phone to
 change the Remote layout when automatic rotation is selected.
+
+## Point at the TV
+
+Choose **Wii Remote** or **Wii Remote + MotionPlus** on a phone with a gyroscope.
+Gyro aiming starts enabled on supported phones. Point the **top edge** of the
+phone toward the center of your TV and tap **CENTER**, then turn the phone to
+move the pointer. This uses relative rotation, so sideways translation alone
+does not move the cursor. Recenter after drift or changing your grip.
+
+- **AIM ON/OFF** switches between gyro and touch-only pointing.
+- Touching the pointer pad overrides gyro input until you release it.
+- **SETUP → Motion & orientation** adjusts aim sensitivity (25–300%) and
+  smoothing (0–200 ms). At 100%, approximately 35° horizontally or 25° vertically
+  reaches an edge of the pointer range.
+- **CENTER** recalibrates only the pointer, preserving MotionPlus orientation.
+  A separate setting resets the MotionPlus orientation if needed.
+- Portrait/landscape changes reset both coordinate frames. Sensor data older
+  than 200 ms hides the gyro pointer rather than leaving it stuck onscreen.
+
+The pointer pad previews the transmitted aim position. Gyro aiming works with
+ordinary Remote packets; MotionPlus mode is optional. No camera or sensor bar
+is required. Live Wii U game feel and iOS sensor behavior still need testing.
 
 ## Build
 
