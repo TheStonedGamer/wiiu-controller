@@ -1,0 +1,50 @@
+name: Publish iOS repositories
+on:
+  workflow_run:
+    workflows: [Build and test]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: ios-repositories
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - name: Read published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" | python3 -c 'import json,sys; json.dump([r for page in json.load(sys.stdin) for r in page],sys.stdout)' > /tmp/controller-releases.json
+      - name: Build IPA feed and jailbreak packages
+        run: python3 tools/build_ios_repo.py /tmp/controller-releases.json dist/ios-repo --cache /tmp/controller-ipa-cache
+      - name: Validate package and feed integrity
+        run: python3 tests/validate_ios_repo.py dist/ios-repo
+      - name: Upload Pages repository
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/ios-repo
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish feeds
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

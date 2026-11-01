@@ -77,6 +77,26 @@ tested installation target.
 **3DS / 2DS:** install the CIA using FBI, or place the 3DSX under `sd:/3ds/` and
 launch it through the Homebrew Launcher.
 
+### iOS homebrew sources
+
+For updates through **Zebra, Sileo or Cydia**, add:
+
+```text
+https://thestonedgamer.github.io/wiiu-controller/
+```
+
+For an installer supporting an **AltStore Classic IPA source**, use:
+
+```text
+https://thestonedgamer.github.io/wiiu-controller/apps.json
+```
+
+The jailbreak package supports rootful arm64/iOS 12+; export layouts and remove
+an existing IPA copy before switching to it. The IPA feed requires a compatible
+installer and signing setup. On iOS 12, use the jailbreak source or Filza.
+Both feeds update automatically from published releases. See
+[iOS repository instructions](docs/IOS_REPOSITORY.md) for installation and limits.
+
 ### 3. Connect and join a game
 
 1. Put the client and Wii U on the same local network.
