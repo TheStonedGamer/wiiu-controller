@@ -1,0 +1,65 @@
+name: Build and test
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 3ds
+            artifacts: |
+              dist/ThreeDSController.cia
+              dist/ThreeDSController.3dsx
+          - platform: wiiu
+            artifacts: dist/ThreeDSController.wps
+          - platform: android
+            artifacts: dist/WiiU-Controller.apk
+          - platform: ios
+            artifacts: dist/WiiU-Controller-iPhone5s-JAILBREAK.ipa
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Restore Android signing key
+        if: matrix.platform == 'android' && github.event_name != 'pull_request'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          value = os.environ.get('KEYSTORE', '')
+          if value:
+              path = Path('android/signing/controller.jks')
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(base64.b64decode(value, validate=True))
+              path.chmod(0o600)
+          PY
+      - name: Compile and package
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: ./build.sh "$PLATFORM"
+      - name: Run protocol, motion, input and receiver tests
+        if: matrix.platform == 'android'
+        run: ./tests/check.sh
+      - name: Validate iOS archive and entitlements
+        if: matrix.platform == 'ios'
+        run: |
+          docker compose run --rm build-ios ldid -e build/Payload/WiiUController.app/WiiUController > /tmp/controller-entitlements.plist
+          python3 tests/validate_ipa.py dist/WiiU-Controller-iPhone5s-JAILBREAK.ipa /tmp/controller-entitlements.plist
+      - name: Upload packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wiiu-controller-${{ matrix.platform }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+          retention-days: 30

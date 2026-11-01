@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.brian.wiiuremote.test">
+ <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="35"/>
+ <application android:label="Temporary Wii U controller tests" android:debuggable="true"/>
+ <instrumentation android:name="ControllerInstrumentation" android:targetPackage="com.brian.wiiuremote"/>
+</manifest>

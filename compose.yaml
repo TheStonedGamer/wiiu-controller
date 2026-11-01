@@ -1,0 +1,34 @@
+services:
+  build-3ds:
+    build:
+      context: .
+      dockerfile: docker/3ds.Dockerfile
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - .:/project
+    command: sh -ec 'make -j2; makerom -f cia -o /project/dist/ThreeDSController.cia -target t -ver 5 -exefslogo -elf ThreeDSController.elf -rsf app.rsf -icon ThreeDSController.smdh; cp ThreeDSController.3dsx /project/dist/'
+  build-wiiu:
+    build:
+      context: .
+      dockerfile: docker/wiiu.Dockerfile
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - .:/project
+    command: sh -ec 'make -j2; cp ThreeDSController.wps /project/dist/'
+  build-android:
+    build:
+      context: .
+      dockerfile: docker/android.Dockerfile
+    image: 3ds-wiiu-controller-build-android
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - .:/project
+    command: bash build.sh
+  build-ios:
+    build:
+      context: .
+      dockerfile: docker/ios.Dockerfile
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - .:/project
+    command: bash build.sh

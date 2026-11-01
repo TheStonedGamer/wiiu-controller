@@ -1,0 +1,17 @@
+dist
+**/build
+**/*.elf
+**/*.map
+**/*.3dsx
+**/*.smdh
+**/*.wps
+.git
+android/signing
+backups
+**/*.cia
+**/*.apk
+**/*.ipa
+**/*.jks
+**/*.p12
+**/*.mobileprovision
+.env*

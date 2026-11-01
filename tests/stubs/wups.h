@@ -1,0 +1,11 @@
+#pragma once
+#define WUPS_PLUGIN_NAME(x)
+#define WUPS_PLUGIN_DESCRIPTION(x)
+#define WUPS_PLUGIN_VERSION(x)
+#define WUPS_PLUGIN_AUTHOR(x)
+#define WUPS_PLUGIN_LICENSE(x)
+#define INITIALIZE_PLUGIN() void test_initialize()
+#define ON_APPLICATION_START() void test_start()
+#define ON_APPLICATION_ENDS() void test_end()
+#define DECL_FUNCTION(ret,name,...) ret hook_##name(__VA_ARGS__)
+#define WUPS_MUST_REPLACE(...)
