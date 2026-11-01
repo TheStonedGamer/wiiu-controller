@@ -1,159 +1,255 @@
 # Wii U Controller
 
-Use an Android phone, iPhone or Nintendo 3DS as a Wi-Fi controller for Wii U.
-One Aroma plugin receives input for up to four controller slots.
+[![Build and test](https://github.com/TheStonedGamer/wiiu-controller/actions/workflows/build.yml/badge.svg)](https://github.com/TheStonedGamer/wiiu-controller/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/TheStonedGamer/wiiu-controller)](https://github.com/TheStonedGamer/wiiu-controller/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-| Client | Controller types | Players | Package |
+**Turn your Android phone, iPhone, or Nintendo 3DS into a wireless Wii U controller.**
+
+Use touchscreen buttons and sticks, customize their layout, or aim the Wii
+pointer by moving your phone. One Aroma plugin receives input from all clients,
+with independent controller slots for multiplayer.
+
+[Downloads](#download-v051) · [Setup](#setup) · [Gyro pointing](#gyro-pointing) · [Build](#build-from-source) · [Troubleshooting](#troubleshooting)
+
+<!-- downloads:start -->
+## Download v0.5.1
+
+| Platform | Download | Requirements |
+| --- | --- | --- |
+| Android | [APK](https://github.com/TheStonedGamer/wiiu-controller/releases/download/v0.5.1/WiiU-Controller-android-v0.5.1.apk) | Android 6.0+ |
+| iPhone | [Jailbreak IPA](https://github.com/TheStonedGamer/wiiu-controller/releases/download/v0.5.1/WiiU-Controller-ios-v0.5.1-jailbreak.ipa) | arm64, iOS 12+, active jailbreak and AppSync Unified |
+| Nintendo 3DS / 2DS | [CIA](https://github.com/TheStonedGamer/wiiu-controller/releases/download/v0.5.1/WiiU-Controller-3ds-v0.5.1.cia) · [3DSX](https://github.com/TheStonedGamer/wiiu-controller/releases/download/v0.5.1/WiiU-Controller-3ds-v0.5.1.3dsx) | Homebrew-enabled console |
+| Wii U | [Aroma plugin](https://github.com/TheStonedGamer/wiiu-controller/releases/download/v0.5.1/WiiU-Controller-aroma-v0.5.1.wps) | Aroma environment |
+
+Download **the Wii U plugin and the client for your device**. Checksums are
+included on the [release page](https://github.com/TheStonedGamer/wiiu-controller/releases/tag/v0.5.1).
+<!-- downloads:end -->
+
+## What it supports
+
+| Feature | Android | iOS | 3DS / 2DS |
 | --- | --- | --- | --- |
-| Android 6.0+ | Wii Remote, Pro, Classic, experimental MotionPlus | 1–4 | APK |
-| iOS 12+ arm64, jailbroken with AppSync Unified | Wii Remote, Pro, Classic, experimental MotionPlus | 1–4 | IPA |
-| Nintendo 3DS / 2DS homebrew | Pro, Classic | 2 | CIA / 3DSX |
-| Wii U with Aroma | Receiver for all clients | Four independent slots | WPS |
+| Wii U Pro Controller | Yes | Yes | Yes |
+| Wii Classic Controller | Yes | Yes | Yes |
+| Wii Remote | Yes | Yes | — |
+| Gyro pointer and touch aiming | Yes | Yes | — |
+| MotionPlus | Experimental | Experimental | — |
+| Player selection | 1–4 | 1–4 | Player 2 |
+| Move and resize controls | Yes | Yes | Fixed touch controls |
+| Layout import / export | Yes | Yes | — |
+| Portrait / landscape Remote | Yes | Yes | — |
 
-Version 0.5.1 adds gyro pointing with calibration, smoothing and touch override,
-building on Classic Controller, phone rotation and experimental MotionPlus support. Physical controllers take priority over virtual input on the
-same slot. Two devices cannot own the same slot simultaneously.
+Phones support simultaneous buttons and both sticks, independent layouts for
+each controller type, appearance options, stick deadzones, sensitivity and Y
+inversion. Gyro features require an actual gyroscope; touch controls still work
+without one. Haptics depend on the device.
 
-## Install
+Physical controllers take priority on their slots. Each virtual slot accepts
+one sender at a time; the 3DS and a phone cannot both use player 2.
 
-1. Rename the downloaded Aroma `.wps` to `ThreeDSController.wps` and replace
-   that file in `wiiu/environments/aroma/plugins/` on the Wii U SD card. Remove
-   any other copies of this receiver plugin, then restart Aroma. Update the plugin when updating to 0.5.0.
-2. Install the APK on Android, or install the jailbreak IPA using Filza and
-   AppSync Unified on iOS. The IPA is locally ad-hoc signed, with application
-   identifier entitlements; it has no Apple provisioning profile.
-3. Connect the phone and Wii U to the same local network. In **SETUP**, choose
-   the controller type and player, then find the Wii U or enter its IPv4 address.
-4. Join a game that supports the selected controller type. A game can assign
-   player numbers differently from the controller slot selected here.
+## Setup
 
-For 3DS, install the CIA with FBI or launch the 3DSX with the Homebrew Launcher.
-Use the D-pad to edit the Wii U address, **X** to select Pro or Classic, and **A**
-to connect. The 3DS uses slot 2; leave that slot free. **START + SELECT** exits.
-The touchscreen provides a right stick, stick clicks in Pro mode, and a
-shoulder swap for accessing ZL/ZR on original 3DS models. New 3DS models can
-also use the C-stick and physical ZL/ZR.
+### 1. Install the Wii U receiver
 
-## Phone controls
+1. Download the Aroma plugin above.
+2. Rename it to **`ThreeDSController.wps`**.
+3. Replace the existing file on the Wii U SD card at:
 
-- Multi-touch buttons, floating sticks, pointer area and shake button.
-- **MODE** changes controller type. Rejoin the game if required.
-- **SETUP → Edit button layout** moves/resizes controls. Save, cancel and reset
-  are available; the toolbar stays accessible.
-- Separate layouts for Pro, Classic, horizontal Remote and vertical Remote.
-- Layout JSON import/export works across Android and iOS.
-- Stick sensitivity/deadzone, right Y inversion, haptics, grid snapping,
-  control opacity, labels, accent colors and packet diagnostics.
-- **Motion & orientation** offers automatic rotation, vertical/horizontal Wii
-  Remote orientation and motion recentering. Pro and Classic use landscape.
-- **TILT** forwards accelerometer input. MotionPlus additionally uses a real
-  hardware gyroscope, with relative orientation and recentering. Devices
-  without a gyroscope retain ordinary Remote, Pro and Classic support.
+   ```text
+   wiiu/environments/aroma/plugins/ThreeDSController.wps
+   ```
 
-Motion axes and the Remote D-pad follow display rotation, including reverse
-landscape. Layout editing locks the current orientation. Rotate the phone to
-change the Remote layout when automatic rotation is selected.
+4. Keep only one copy of this receiver plugin, reinsert the SD card and restart
+   the Wii U into Aroma.
 
-## Point at the TV
+### 2. Install a client
 
-Choose **Wii Remote** or **Wii Remote + MotionPlus** on a phone with a gyroscope.
-Gyro aiming starts enabled on supported phones. Point the **top edge** of the
-phone toward the center of your TV and tap **CENTER**, then turn the phone to
-move the pointer. This uses relative rotation, so sideways translation alone
-does not move the cursor. Recenter after drift or changing your grip.
+**Android:** install the APK. If Android asks, allow installation from the app
+you used to download or open the file. Official release APKs retain the same
+signing key, so they can update an existing official installation.
 
-- **AIM ON/OFF** switches between gyro and touch-only pointing.
-- Touching the pointer pad overrides gyro input until you release it.
-- **SETUP → Motion & orientation** adjusts aim sensitivity (25–300%) and
-  smoothing (0–200 ms). At 100%, approximately 35° horizontally or 25° vertically
-  reaches an edge of the pointer range.
-- **CENTER** recalibrates only the pointer, preserving MotionPlus orientation.
-  A separate setting resets the MotionPlus orientation if needed.
-- Portrait/landscape changes reset both coordinate frames. Sensor data older
-  than 200 ms hides the gyro pointer rather than leaving it stuck onscreen.
+**iOS:** install the IPA through Filza with an active jailbreak and AppSync
+Unified. The package is ad-hoc signed for jailbroken devices; it is not signed
+or provisioned for stock iOS, the App Store or TestFlight. The iPhone 5s is a
+tested installation target.
 
-The pointer pad previews the transmitted aim position. Gyro aiming works with
-ordinary Remote packets; MotionPlus mode is optional. No camera or sensor bar
-is required. Live Wii U game feel and iOS sensor behavior still need testing.
+**3DS / 2DS:** install the CIA using FBI, or place the 3DSX under `sd:/3ds/` and
+launch it through the Homebrew Launcher.
 
-## Build
+### 3. Connect and join a game
 
-Install Docker Engine and the Compose plugin. From the repository root:
+1. Put the client and Wii U on the same local network.
+2. On a phone, open **SETUP**, choose an unused player slot and controller type,
+   then find the Wii U or enter its IPv4 address. The iOS player and type
+   selectors are separate entries in SETUP.
+3. On 3DS, edit the address with the D-pad, press **X** to choose Pro or Classic,
+   then **A** to connect. It always uses slot 2.
+4. Open a Wii U game that supports the selected controller type and join.
+
+Game-specific player numbers can differ from controller slot numbers. After
+changing controller type, some games require you to join again. This project
+does not emulate the Wii U GamePad.
+
+## Gyro pointing
+
+In **Wii Remote** or **Wii Remote + MotionPlus** mode:
+
+1. Enable **AIM** if it is off.
+2. Point the **top edge of the phone** toward the center of your TV.
+3. Tap **CENTER**, then turn the phone left/right or up/down to aim.
+
+The pointer pad previews your aim. Touching it overrides gyro input until you
+release it. Gyro aiming works in ordinary Remote mode; MotionPlus is optional.
+No sensor bar, IR blaster or camera is required.
+
+Under **SETUP → Motion & orientation**, adjust:
+
+| Setting | Effect |
+| --- | --- |
+| Aim sensitivity | 25–300%; higher values move the pointer farther for the same rotation |
+| Aim smoothing | 0–200 ms; higher values reduce jitter and add response delay |
+| Recenter pointer | Sets your current grip as the center without resetting MotionPlus |
+| Reset MotionPlus orientation | Resets the separate relative motion orientation |
+| Remote orientation | Automatic, vertical or horizontal |
+
+At 100% sensitivity, roughly 35° horizontally or 25° vertically reaches an
+edge. Gyro aiming tracks rotation, not the phone's physical position relative
+to the TV: sliding it sideways without turning it does not move the pointer.
+Recenter when you change grip or notice drift. Rotating the display resets
+calibration. Sensor readings older than 200 ms invalidate the gyro pointer.
+
+## Customize your controls
+
+Open **SETUP → Edit button layout** to drag controls or resize them using their
+bottom-right corners. **SAVE** keeps changes; **CANCEL** discards them. The
+editor locks orientation and reserves the toolbar so its buttons stay reachable.
+
+Pro, Classic, portrait Remote and landscape Remote layouts are saved separately.
+Export/import JSON files to share layouts between Android and iOS. Settings
+also offer grid snapping, stick sensitivity/deadzone, right Y inversion,
+haptics, label visibility, control opacity, accent colors and packet statistics.
+
+Remote mode includes a touch pointer, synthetic **SHAKE**, and **TILT** to
+forward accelerometer input. MotionPlus adds real gyroscope data; it does not
+provide Nunchuk support.
+
+### 3DS controls
+
+| Input | Function |
+| --- | --- |
+| A/B/X/Y and D-pad | Corresponding controller buttons |
+| START / SELECT | Plus / Minus |
+| Circle Pad | Left stick |
+| New 3DS C-stick | Right stick |
+| Touch right-stick area | Right stick; releasing returns it to neutral |
+| Touch shoulder swap | Swap L/R with ZL/ZR |
+| Touch L3 / R3 | Stick clicks in Pro mode |
+| START + SELECT together | Exit |
+
+Original 3DS/2DS models use the touch stick and shoulder swap for missing
+physical controls. The touchscreen accepts one contact at a time. HOME remains
+reserved for the 3DS system.
+
+## Compatibility and testing
+
+- The original 3DS Pro path has been used on a Wii U.
+- Android 0.5.1 passed installed-app checks on a Galaxy A14: Pro/Classic
+  multitouch, neutral releases, portrait controls, gyro pointer output,
+  recentering, touch override, stale-sample handling and layout persistence.
+  Touch and pointer-orientation checks use synthetic inputs; real gyroscope
+  packet delivery was checked separately.
+- iOS 0.5.1 installed over USB on a jailbroken iPhone 5s. Its touch, rotation and
+  sensor behavior still needs live device testing.
+- All four targets build in GitHub Actions. Host tests cover protocol encoding,
+  reconnection, discovery, ownership, timeout release, motion and pointer math.
+
+**MotionPlus and game compatibility remain experimental.** The receiver hooks
+KPAD reads and basic controller/MotionPlus detection and control. Games using
+raw WPAD reads, additional connection/extension callbacks or special calibration
+commands may need more receiver support. Gyro pointing still needs live Wii U
+feel and compatibility testing.
+
+Nunchuk, GamePad emulation, rumble, speaker feedback and vWii are not implemented.
+Aroma runs in Wii U mode; it does not extend this plugin into vWii.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Waiting / reconnecting | Confirm the receiver is installed and Aroma restarted. Check the IP, shared network and router client isolation. |
+| Slot occupied | Disconnect the physical controller or virtual sender using that slot, or choose another player. |
+| Connected but no input in a game | Check which controller types the game supports. Rejoin after switching type. Raw WPAD games may need additional hooks. |
+| Pointer drifts or feels wrong | Point at the TV center and tap CENTER. Check sensitivity, smoothing and display orientation. |
+| MotionPlus unavailable | The phone needs a real gyroscope. An accelerometer or IR transmitter cannot replace it. |
+| iOS installation rejected | Confirm the jailbreak and AppSync Unified are active and use the jailbreak IPA. |
+| Android update rejects its signature | Use an official release. Fork/PR APKs use another development key and cannot update the official app. |
+
+Input expires on the receiver after 250 ms without a fresh accepted packet.
+Clients reconnect after lost replies and send neutral input when stopping or
+changing configuration. UDP traffic uses port **26760**, without pairing or
+authentication; use your own local network.
+
+## Build from source
+
+Requirements: Docker Engine and the Compose plugin. Builds download their SDKs;
+Android Studio and Xcode are not required on the host.
 
 ```sh
-./build.sh                 # all four platforms
-./build.sh android ios     # selected platforms
+git clone https://github.com/TheStonedGamer/wiiu-controller.git
+cd wiiu-controller
+./build.sh                 # Android, iOS, 3DS and Aroma
+./build.sh android ios     # or select platforms
 ./build.sh 3ds wiiu
 ./tests/check.sh
 ```
 
-Run with `sudo` if your user cannot access Docker. On Linux, the script passes
-your UID/GID into containers. No Android Studio, Xcode or console SDK install
-on the host is required. The Docker builds download their SDKs and toolchains.
+Use `sudo` if your Linux account cannot access Docker. Build products are written
+to `dist/`. Android signing keys stay under the ignored `android/signing/`
+directory. See [building and signing](docs/BUILDING.md) for output names,
+toolchains, iOS requirements, key setup and optional ADB device tests.
 
-| Output | Purpose |
-| --- | --- |
-| `dist/WiiU-Controller.apk` | Android installer |
-| `dist/WiiU-Controller-iPhone5s-JAILBREAK.ipa` | Jailbroken arm64 iOS 12+ installer |
-| `dist/ThreeDSController.cia` | 3DS installer |
-| `dist/ThreeDSController.3dsx` | 3DS Homebrew Launcher executable |
-| `dist/ThreeDSController.wps` | Aroma receiver plugin |
+### Automatic releases
 
-Download installable, versioned packages from [Releases](https://github.com/TheStonedGamer/wiiu-controller/releases/latest).
-GitHub Actions builds each platform on pushes and pull requests and runs the
-host/IPA checks. Once all four builds pass on `main`, it automatically creates
-a `vMAJOR.MINOR.PATCH` tag and publishes a release containing the APK, jailbreak
-IPA, CIA, 3DSX, Aroma plugin, and SHA-256 checksums. Existing published versions
-are preserved. Every build also remains available as an Actions artifact.
+Every push and pull request builds all platforms and runs the checks. After a
+successful `main` build, Actions creates the version tag and publishes the five
+platform packages, `SHA256SUMS.txt`, and `release.json`.
 
-To publish the next version, run `python3 tools/version.py 0.5.2`, update
-`docs/RELEASE_NOTES.md`, commit and push to `main`. This updates all platform
-versions and installer build numbers. The pipeline publishes once per version;
-ordinary commits with the same VERSION continue to run CI without replacing
-the release.
+To publish a new version:
 
-Android builds reuse `android/signing/controller.jks` locally. Trusted Actions
-builds restore the same key from the encrypted `ANDROID_KEYSTORE_BASE64`
-repository secret; the key file is excluded from Git. Forks and pull requests
-without that secret generate a different development key, so those APKs cannot
-update an installation signed with the original key. See
-[building and signing](docs/BUILDING.md).
-
-## Repository
-
-```text
-android/     Native Java application
-3ds/         libctru application and touchscreen controls
-ios/         Native Objective-C/UIKit application
-wiiu/        Aroma WUPS receiver
-docker/     Container toolchains
-tests/      Protocol, input, motion and receiver tests
-docs/       Protocol and development notes
+```sh
+python3 tools/version.py --patch
+# Update docs/RELEASE_NOTES.md, then commit and push to main.
 ```
 
-## Compatibility and testing
+The version tool synchronizes platform display versions and increments Android,
+iOS and CIA installer build numbers. Published versions are preserved;
+ordinary commits with the same VERSION run CI without replacing the release.
+Android release signing uses an encrypted Actions secret. PR builds cannot
+access that key or publish releases.
 
-The original 3DS-to-Wii-U Pro path has been used on hardware. The Android 0.5.0 build passed installed-app Pro/Classic multitouch, portrait
-Remote, live gyro packet and layout-editor checks on a Galaxy A14. The iOS app installed successfully on a jailbroken iPhone 5s.
+## Development
 
-The new modes have host test and cross-build coverage. Android portrait
-controls and real gyroscope packets were checked on a phone; live Wii U game
-compatibility and iOS rotation/sensors still need hardware testing. MotionPlus is experimental: the receiver supplies processed
-KPAD gyro data and basic MotionPlus detection/control hooks, but does not
-implement the complete Wii Remote hardware stack. Games using raw WPAD input,
-connection/extension callbacks, calibration commands or special accessory
-behavior may need more hooks. Nunchuk, rumble, speaker feedback, GamePad and
-vWii support are not implemented. Gyro orientation is relative and can drift;
-use recenter and the game's calibration when available.
+| Directory | Contents |
+| --- | --- |
+| `android/` | Native Java/Canvas client |
+| `ios/` | Objective-C/UIKit client |
+| `3ds/` | libctru client and touch controls |
+| `wiiu/` | Aroma WUPS receiver |
+| `docker/` | Platform build environments |
+| `tests/` | Host and Android device checks |
+| `tools/` | Version and release tooling |
+| `docs/` | Protocol, build notes and roadmap |
 
-Input expires after 250 ms without accepted packets and produces a neutral
-release. Clients reconnect when acknowledgements stop and release input on
-backgrounding or configuration changes. Transport is local-network UDP,
-without pairing/authentication; network client isolation can block discovery.
+[Protocol](docs/PROTOCOL.md) · [Android notes](android/README.md) ·
+[iOS notes](ios/README.md) · [Roadmap](docs/ROADMAP.md)
 
-See [protocol](docs/PROTOCOL.md), [Android](android/README.md),
-[iOS](ios/README.md), [roadmap](docs/ROADMAP.md) and
-[third-party notices](THIRD_PARTY_NOTICES.md).
+Bug reports are welcome in [Issues](https://github.com/TheStonedGamer/wiiu-controller/issues).
+Include the app/plugin version, client device, selected controller mode and
+player slot, Wii U game, and steps to reproduce. Game compatibility reports
+should distinguish connecting successfully from receiving input in the game.
 
-MIT license. Independent homebrew project; Nintendo trademarks belong to their
-respective owners.
+## License
+
+MIT. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+Independent homebrew software; not affiliated with Nintendo, Samsung or Apple.

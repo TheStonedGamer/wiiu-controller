@@ -48,12 +48,24 @@ def bump(value):
     p.write_text(text)
     p = ROOT / 'compose.yaml'
     p.write_text(re.sub(r'-ver ([0-9]+)',lambda m:f'-ver {int(m[1])+1}',p.read_text()))
+    readme = ROOT / 'README.md'
+    if readme.exists():
+        text = readme.read_text()
+        start, end = text.index('<!-- downloads:start -->'), text.index('<!-- downloads:end -->')
+        text = text[:start] + text[start:end].replace(old,value) + text[end:]
+        text = re.sub(r'\[Downloads\]\(#download-v[0-9]+\)', '[Downloads](#download-v'+value.replace('.','')+')', text)
+        readme.write_text(text)
     (ROOT / 'VERSION').write_text(value+'\n')
     check()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('new_version',nargs='?',help='Bump versions and installer build numbers; omit to check')
+    parser.add_argument('--patch',action='store_true',help='Increment the patch version')
     args = parser.parse_args()
-    if args.new_version: bump(args.new_version)
+    if args.patch and args.new_version: parser.error('Use --patch or an explicit version, not both')
+    if args.patch:
+        parts = list(map(int,version().split('.'))); parts[2] += 1
+        bump('.'.join(map(str,parts)))
+    elif args.new_version: bump(args.new_version)
     else: check()
