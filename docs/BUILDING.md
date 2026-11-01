@@ -63,3 +63,21 @@ python3 tests/validate_ipa.py dist/WiiU-Controller-iPhone5s-JAILBREAK.ipa /tmp/c
 
 The CIA uses homebrew unique ID `0xF3D01`; forks should allocate their own
 identity when distributing alongside this app.
+
+## Publishing a release
+
+The public monorepo uses the root VERSION file as its release version.
+`python3 tools/version.py` checks all platform display versions.
+`python3 tools/version.py 0.5.2` bumps the version and Android/iOS/CIA installer
+build numbers together. Update `docs/RELEASE_NOTES.md`, commit and push to main.
+
+After every platform builds successfully, Actions downloads only that run's
+artifacts, creates versioned package names plus checksums, creates the version
+tag at the tested commit and publishes a GitHub release. Release write access
+is limited to the publishing job. Pull requests only build/test; they cannot
+publish or read the Android signing secret.
+
+Published versions are immutable: another main push with the same version does
+not overwrite the release. Failed draft uploads can be retried for the same
+commit. A conflicting existing tag/draft fails rather than replacing another
+commit's packages. SDKs, signing keys and credentials remain excluded from Git.

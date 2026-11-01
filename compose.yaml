@@ -6,7 +6,7 @@ services:
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     volumes:
       - .:/project
-    command: sh -ec 'make -j2; makerom -f cia -o /project/dist/ThreeDSController.cia -target t -ver 5 -exefslogo -elf ThreeDSController.elf -rsf app.rsf -icon ThreeDSController.smdh; cp ThreeDSController.3dsx /project/dist/'
+    command: sh -ec 'make -j2; makerom -f cia -o /project/dist/ThreeDSController.cia -target t -ver 6 -exefslogo -elf ThreeDSController.elf -rsf app.rsf -icon ThreeDSController.smdh; cp ThreeDSController.3dsx /project/dist/'
   build-wiiu:
     build:
       context: .

@@ -40,7 +40,7 @@ static bool chooseAddress(char *ip, size_t size) {
       octets[selected] = (octets[selected] + 255) % 256;
     snprintf(ip, size, "%u.%u.%u.%u", octets[0], octets[1], octets[2],
              octets[3]);
-    printf("\x1b[1;1H3DS Wii U Controller 0.5.0\n\nWii U: %-16s\nEditing octet "
+    printf("\x1b[1;1H3DS Wii U Controller 0.5.1\n\nWii U: %-16s\nEditing octet "
            "%u\n\nLeft/right: select octet\nUp/down: change value\nA: connect  "
            " B: exit\nX: mode (%s)\n",
            ip, selected + 1, classic ? "Classic" : "Pro");
@@ -53,7 +53,7 @@ static bool chooseAddress(char *ip, size_t size) {
   return false;
 }
 int main(void) {
-  stage("0.5.0: entered main");
+  stage("0.5.1: entered main");
   gfxInitDefault();
   stage("graphics initialized");
   consoleInit(GFX_TOP, NULL);

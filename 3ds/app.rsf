@@ -16,7 +16,7 @@ Option:
 
 SystemControlInfo:
   SaveDataSize: 128KB
-  RemasterVersion: 5
+  RemasterVersion: 6
   StackSize: 0x4000
 
 AccessControlInfo:

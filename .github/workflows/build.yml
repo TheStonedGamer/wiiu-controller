@@ -7,7 +7,7 @@ permissions:
   contents: read
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
     name: ${{ matrix.platform }}
@@ -29,6 +29,8 @@ jobs:
             artifacts: dist/WiiU-Controller-iPhone5s-JAILBREAK.ipa
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check platform versions
+        run: python3 tools/version.py
       - name: Restore Android signing key
         if: matrix.platform == 'android' && github.event_name != 'pull_request'
         env:
@@ -63,3 +65,25 @@ jobs:
           path: ${{ matrix.artifacts }}
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: Publish versioned release
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download successful platform packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: wiiu-controller-*
+          path: release-input
+      - name: Prepare versioned packages and checksums
+        run: python3 tools/prepare_release.py release-input release-assets
+      - name: Create tag and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/publish_release.sh release-assets

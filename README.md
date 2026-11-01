@@ -98,9 +98,18 @@ on the host is required. The Docker builds download their SDKs and toolchains.
 | `dist/ThreeDSController.3dsx` | 3DS Homebrew Launcher executable |
 | `dist/ThreeDSController.wps` | Aroma receiver plugin |
 
-GitHub Actions builds each target separately on pushes and pull requests, runs
-the host tests, validates the IPA identity/entitlements, and uploads packages
-as workflow artifacts. Download them from the **Actions** tab after a run.
+Download installable, versioned packages from [Releases](https://github.com/TheStonedGamer/wiiu-controller/releases/latest).
+GitHub Actions builds each platform on pushes and pull requests and runs the
+host/IPA checks. Once all four builds pass on `main`, it automatically creates
+a `vMAJOR.MINOR.PATCH` tag and publishes a release containing the APK, jailbreak
+IPA, CIA, 3DSX, Aroma plugin, and SHA-256 checksums. Existing published versions
+are preserved. Every build also remains available as an Actions artifact.
+
+To publish the next version, run `python3 tools/version.py 0.5.2`, update
+`docs/RELEASE_NOTES.md`, commit and push to `main`. This updates all platform
+versions and installer build numbers. The pipeline publishes once per version;
+ordinary commits with the same VERSION continue to run CI without replacing
+the release.
 
 Android builds reuse `android/signing/controller.jks` locally. Trusted Actions
 builds restore the same key from the encrypted `ANDROID_KEYSTORE_BASE64`
