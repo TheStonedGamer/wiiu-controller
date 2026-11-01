@@ -16,8 +16,9 @@ same slot. Two devices cannot own the same slot simultaneously.
 
 ## Install
 
-1. Put `ThreeDSController.wps` in `wiiu/environments/aroma/plugins/` on the Wii U
-   SD card, then restart Aroma. Update the plugin when updating to 0.5.0.
+1. Rename the downloaded Aroma `.wps` to `ThreeDSController.wps` and replace
+   that file in `wiiu/environments/aroma/plugins/` on the Wii U SD card. Remove
+   any other copies of this receiver plugin, then restart Aroma. Update the plugin when updating to 0.5.0.
 2. Install the APK on Android, or install the jailbreak IPA using Filza and
    AppSync Unified on iOS. The IPA is locally ad-hoc signed, with application
    identifier entitlements; it has no Apple provisioning profile.

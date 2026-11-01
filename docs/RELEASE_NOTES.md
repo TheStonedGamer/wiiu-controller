@@ -6,8 +6,10 @@ Android, iOS, Nintendo 3DS and the Aroma receiver are included in this release.
   landscape Wii Remote controls.
 - Customizable layouts, import/export and appearance settings.
 
-Choose your platform's package below. Put the Aroma `.wps` file in
-`wiiu/environments/aroma/plugins/` on the Wii U SD card and restart the console.
+Choose your platform's package below. Rename the versioned Aroma `.wps` to
+`ThreeDSController.wps`, replacing the existing file in
+`wiiu/environments/aroma/plugins/` on the Wii U SD card. Keep only one copy of
+this receiver plugin, then restart the console.
 
 The iOS IPA requires an active jailbreak and AppSync Unified. MotionPlus and
 live game compatibility remain experimental. The 3DS client uses player 2.
