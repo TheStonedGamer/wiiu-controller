@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.24)
+project(WiiUControllerHid LANGUAGES CXX)
+if(NOT WIN32)
+  message(FATAL_ERROR "This bridge requires Windows")
+endif()
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+include(FetchContent)
+set(BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_INSTALL OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_ENABLE_PACKAGING OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_BUILD_WINDOWS_DRIVER OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_BUILD_WINDOWS_BROKER OFF CACHE BOOL "" FORCE)
+set(LIBVIRTUALHID_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+# Matches the production driver release v2026.914.1218.10. Never fetch a moving branch.
+FetchContent_Declare(libvirtualhid
+  GIT_REPOSITORY https://github.com/LizardByte/libvirtualhid.git
+  GIT_TAG 53e1a949fc0784af716b782ddfa6c647cafd1f05
+  GIT_SUBMODULES third-party/lizardbyte-common
+  GIT_SUBMODULES_RECURSE OFF)
+FetchContent_MakeAvailable(libvirtualhid)
+add_library(controller_hid SHARED bridge.cpp)
+target_link_libraries(controller_hid PRIVATE libvirtualhid::libvirtualhid)
+install(TARGETS controller_hid RUNTIME DESTINATION .)
+install(FILES "${libvirtualhid_SOURCE_DIR}/LICENSES/MIT.md" DESTINATION licenses RENAME libvirtualhid-MIT.txt)
+install(FILES "${libvirtualhid_SOURCE_DIR}/third-party/lizardbyte-common/LICENSE" DESTINATION licenses RENAME lizardbyte-common-LICENSE.txt)

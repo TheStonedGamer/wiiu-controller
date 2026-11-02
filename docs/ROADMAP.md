@@ -13,3 +13,6 @@
 - Add iOS device automation and broader phone/tablet layout coverage.
 
 vWii requires a separate integration; an Aroma plugin alone does not provide it.
+
+Windows receiver: verify the Virtual HID Driver backend on a Windows PC and in emulators;
+add configurable mappings and consider an emulator motion/pointer interface.

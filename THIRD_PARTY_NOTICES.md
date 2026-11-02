@@ -13,3 +13,17 @@ frameworks and templates retain their upstream terms:
 
 SDKs, external tool source, signing keys and container images are not vendored
 in this repository. The 3DS package currently uses devkitPro's default icon.
+
+## Windows receiver
+
+The Windows native bridge statically links the MIT-licensed libvirtualhid SDK
+by LizardByte, pinned to commit 53e1a949fc0784af716b782ddfa6c647cafd1f05
+(release v2026.914.1218.10), and its MIT-licensed lizardbyte-common dependency.
+The package includes both copyright/license notices under `licenses/`.
+Sources: https://github.com/LizardByte/libvirtualhid and
+https://github.com/LizardByte/lizardbyte-common.
+
+The separately installed Virtual HID Driver, broker and machine license are
+provided by LizardByte under its own terms. Driver and broker binaries are not
+bundled with the receiver. See the upstream license map:
+https://github.com/LizardByte/libvirtualhid/blob/v2026.914.1218.10/LICENSES/license-map.md

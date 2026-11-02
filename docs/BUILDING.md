@@ -81,3 +81,13 @@ Published versions are immutable: another main push with the same version does
 not overwrite the release. Failed draft uploads can be retried for the same
 commit. A conflicting existing tag/draft fails rather than replacing another
 commit's packages. SDKs, signing keys and credentials remain excluded from Git.
+
+## Windows PC receiver
+
+Install Visual Studio 2022 with Desktop development with C++, CMake 3.24+,
+Git, and the .NET 10 SDK, then run `./windows/build.ps1` in PowerShell.
+The Windows workflow builds the pinned libvirtualhid native SDK bridge and a
+self-contained x64 ZIP. See [Windows instructions](../windows/README.md) for
+driver/license requirements, profiles, and the separate Windows tag release.
+The Docker build and mobile/console release pipeline target the original four
+platforms.

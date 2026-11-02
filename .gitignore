@@ -25,3 +25,7 @@ backups/
 .DS_Store
 __pycache__/
 *.pyc
+
+# .NET build outputs
+**/bin/
+**/obj/

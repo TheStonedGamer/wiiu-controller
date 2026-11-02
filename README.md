@@ -26,6 +26,15 @@ Download **the Wii U plugin and the client for your device**. Checksums are
 included on the [release page](https://github.com/TheStonedGamer/wiiu-controller/releases/tag/v0.5.1).
 <!-- downloads:end -->
 
+## Windows PC receiver (in development)
+
+The same phone and 3DS apps can send input to the new
+[Windows receiver](windows/README.md), which creates virtual gamepads
+for PC games and emulators through LizardByte Virtual HID Driver. A separate
+driver installation and paid machine license are required.
+[Download Windows x64](https://github.com/TheStonedGamer/wiiu-controller/releases/tag/windows-v0.5.1).
+See its setup and build instructions; live Windows testing is still pending.
+
 ## What it supports
 
 | Feature | Android | iOS | 3DS / 2DS |
@@ -256,6 +265,7 @@ access that key or publish releases.
 | `ios/` | Objective-C/UIKit client |
 | `3ds/` | libctru client and touch controls |
 | `wiiu/` | Aroma WUPS receiver |
+| `windows/` | Windows PC receiver and virtual Xbox gamepad output |
 | `docker/` | Platform build environments |
 | `tests/` | Host and Android device checks |
 | `tools/` | Version and release tooling |
