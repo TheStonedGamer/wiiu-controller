@@ -70,7 +70,7 @@ Closing the window stops the receiver and removes its devices.
 
 ## Build and publish
 
-Install Visual Studio 2022 with Desktop development with C++, CMake 3.24+,
+Install Visual Studio 2022 or newer with Desktop development with C++, CMake 3.24+,
 Git, and the .NET 10 SDK. Run from PowerShell at the repository root:
 
 ```powershell

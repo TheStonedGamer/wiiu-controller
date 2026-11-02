@@ -84,7 +84,7 @@ commit's packages. SDKs, signing keys and credentials remain excluded from Git.
 
 ## Windows PC receiver
 
-Install Visual Studio 2022 with Desktop development with C++, CMake 3.24+,
+Install Visual Studio 2022 or newer with Desktop development with C++, CMake 3.24+,
 Git, and the .NET 10 SDK, then run `./windows/build.ps1` in PowerShell.
 The Windows workflow builds the pinned libvirtualhid native SDK bridge and a
 self-contained x64 ZIP. See [Windows instructions](../windows/README.md) for
